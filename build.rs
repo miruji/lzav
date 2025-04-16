@@ -16,9 +16,26 @@ fn main()
   let bc: PathBuf = outPath.join("lzav.bc");
   let o: PathBuf = outPath.join("lzav.o");
 
+  // Define the correct target for generating the .ll intermediate code
+  // todo You should specify the system here so that llvm correctly compiles the code
+  //      and it correctly links with this library
+  let targetOs: String = env::var("CARGO_CFG_TARGET_OS").unwrap();
+  let target: &str = match targetOs.as_str() {
+    "windows" => "x86_64-w64-mingw32",
+    "linux" => "x86_64-linux-gnu",
+    _ => panic!("Unsupported target OS: {:?}", targetOs),
+  };
+
   // 1. .c -> .ll
   let mut status: ExitStatus = Command::new("clang")
-    .args(["-S", "-emit-llvm", "-fPIC", c.to_str().unwrap(), "-o"])
+    .args([
+      "-S",
+      &format!("--target={}", target),
+      "-emit-llvm",
+      "-fPIC",
+      c.to_str().unwrap(),
+      "-o"
+    ])
     .arg(&ll)
     .status()
     .expect("Failed to run clang");

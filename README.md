@@ -5,3 +5,5 @@ This is the LZAV implementation for use in Rust. It compiles the original C/C++ 
 In addition, `safeCompress(input: &[u8]) -> Option <Vec<u8> >` is available for simple and safe compression, and `pub fn safeDecompress(inputData: &[u8]) -> Option< Vec<u8> >` for safe decompression of data with unknown size.
 
 More detailed documentation is available for each method. Original [repository](https://github.com/avaneev/lzav).
+
+Currently, only x64 builds for Windows/Linux are supported; for other builds, this should be fixed in build.rs.
