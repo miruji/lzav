@@ -1,0 +1,38 @@
+[package]
+edition = "2024"
+name = "lzav"
+version = "0.1.0"
+
+description = "Rust bindings to lzav compressor written in C"
+readme = false
+license = "MIT"
+
+build = "build.rs"
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+[lib]
+name = "lzav"
+path = "src/lib.rs"
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+strip = "symbols"
+overflow-checks = false
+debug = false
+incremental = true
+rpath = false
+
+[profile.dev]
+opt-level = 0
+debug = true
+overflow-checks = true
+lto = false
+incremental = true
