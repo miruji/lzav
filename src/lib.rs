@@ -216,14 +216,14 @@ pub fn safeCompress(input: &[u8]) -> Option <Vec<u8> >
   let mut compressed: Vec<u8> = vec![0u8; bound as usize];
 
   let compressedLen: c_int = unsafe
-    {
-      compressDefault(
-        input.as_ptr() as *const c_void,
-        inputLen,
-        compressed.as_mut_ptr() as *mut c_void,
-        bound,
-      )
-    };
+  {
+    compressDefault(
+      input.as_ptr() as *const c_void,
+      inputLen,
+      compressed.as_mut_ptr() as *mut c_void,
+      bound,
+    )
+  };
 
   match compressedLen <= 0
   {
@@ -257,63 +257,51 @@ pub fn safeDecompress(inputData: &[u8]) -> Option< Vec<u8> >
   }
 
   let mut decompressedData: Vec<u8> = Vec::new();
-  let mut offsetInput: usize = 0;
-
-  const blockSize: usize = 65536;
 
   //
-  let mut currentChunkSize: usize;
-  let mut inputChunk: &[u8];
+  let currentChunkSize: usize = std::cmp::min(inputData.len(), inputData.len());
+  let inputChunk: &[u8] = &inputData[0..currentChunkSize];
 
-  let mut bufferSize: usize;
+  // Initial assessment of the size of the output buffer
+  let mut bufferSize: usize = currentChunkSize * 10;
 
+  //
   let mut decompressedLengthUsize: usize;
   let mut decompressedLength: c_int;
   let mut outputBuffer: Vec<u8>;
 
-  while offsetInput < inputData.len()
+  loop
   {
-    currentChunkSize = std::cmp::min(blockSize, inputData.len() -offsetInput);
-    inputChunk = &inputData[offsetInput..offsetInput +currentChunkSize];
-
-    // Initial assessment of the size of the output buffer
-    bufferSize = currentChunkSize * 10;
-
-    //
-    loop
+    outputBuffer = vec![0u8; bufferSize];
+    decompressedLength = unsafe
     {
-      outputBuffer = vec![0u8; bufferSize];
-      decompressedLength = unsafe
-        {
-          decompressPartial(
-            inputChunk.as_ptr() as *const c_void,
-            inputChunk.len() as c_int,
-            outputBuffer.as_mut_ptr() as *mut c_void,
-            outputBuffer.len() as c_int,
-          )
-        };
+      decompressPartial(
+        inputChunk.as_ptr() as *const c_void,
+        inputChunk.len() as c_int,
+        outputBuffer.as_mut_ptr() as *mut c_void,
+        outputBuffer.len() as c_int,
+      )
+    };
 
-      match decompressedLength <= 0
-      {
-        false => {}
-        true => return None
-      }
-      decompressedLengthUsize = decompressedLength as usize;
-
-      // If decompression has met the current buffer, adjust the length and add the data
-      match decompressedLengthUsize < bufferSize
-      {
-        true =>
-          {
-            unsafe { outputBuffer.set_len(decompressedLengthUsize); }
-            decompressedData.extend_from_slice(&outputBuffer);
-            break;
-          }
-        // If the result filled the buffer, increase the size and try again
-        false => bufferSize *= 2
-      }
+    match decompressedLength <= 0
+    {
+      false => {}
+      true => return None
     }
-    offsetInput += currentChunkSize;
+    decompressedLengthUsize = decompressedLength as usize;
+
+    // If decompression has met the current buffer, adjust the length and add the data
+    match decompressedLengthUsize < bufferSize
+    {
+      true =>
+      {
+        unsafe { outputBuffer.set_len(decompressedLengthUsize); }
+        decompressedData.extend_from_slice(&outputBuffer);
+        break;
+      }
+      // If the result filled the buffer, increase the size and try again
+      false => bufferSize *= 2
+    }
   }
 
   Some(decompressedData)
